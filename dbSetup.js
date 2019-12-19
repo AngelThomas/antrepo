@@ -57,7 +57,7 @@ function populateTable(pDB, pTable, pColumns, pValues) {
 
 async function createDbTables(pDB) {
 	console.log('calling createTable');
-	var result = await createTable(pDB, "customers", "(customer_id integer primary key autoincrement, customer_name text, password text, first_name text, last_name text, street text, zip_code text, city text)");
+	var result = await createTable(pDB, "customers", "(customer_id integer primary key autoincrement, customer_name text, password text, first_name text, last_name text, street text, zip_code text, city text, session_id text)");
 	console.log(result);
 	var result = await createTable(pDB, "shopping_cart", "(session_id text, item_id int, item_name text, item_quantity int, item_price real)");
 	console.log(result);

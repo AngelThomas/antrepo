@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Customer Registration</title>
+  <title>View Customer Data</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
@@ -12,26 +12,24 @@
 <body>
     <%- include ('navBar') -%>
 <div class="container">
-  <h4>Register new account</h4>
-  <form method="post" action="/createNewCustomer">
+  <h4>View Customer Data</h4>
+  <form method="post" action="/updateCustomer">
   <div class="form-group">
     <label for="firstName">First name:</label>
-    <input type="text" class="form-control form-control-sm" id="firstName" name="firstName">
+    <input type="text" class="form-control form-control-sm" id="firstName" name="firstName" value="<%=data.cFirst%>">
     <label for="lastName">Last name:</label>
-    <input type="text" class="form-control form-control-sm" id="lastName" name="lastName">
+    <input type="text" class="form-control form-control-sm" id="lastName" name="lastName" value="<%=data.cLast%>">
     <label for="accountName">Account name:</label>
-    <input type="text" class="form-control form-control-sm" id="accountName" name="accountName">
+    <input type="text" class="form-control form-control-sm" id="accountName" name="accountName" value="<%=data.cUser%>">
     <label for="adrStreet">Street:</label>
-    <input type="text" class="form-control form-control-sm" id="adrStreet" name="adrStreet">
+    <input type="text" class="form-control form-control-sm" id="adrStreet" name="adrStreet" value="<%=data.cStreet%>">
     <label for="adrZip">Zip Code:</label>
-    <input type="text" class="form-control form-control-sm" id="adrZip" name="adrZip">
+    <input type="text" class="form-control form-control-sm" id="adrZip" name="adrZip" value="<%=data.cZip%>">
     <label for="adrCity">City:</label>
-    <input type="text" class="form-control form-control-sm" id="adrCity" name="adrCity">
-    <label for="adrPassword">Password:</label>
-    <input type="password" class="form-control form-control-sm" id="adrPassword" name="adrPassword">
+    <input type="text" class="form-control form-control-sm" id="adrCity" name="adrCity" value="<%=data.cCity%>">
   </div>
 
-  <button type="submit" class="btn btn-primary">Submit</button>
+  <button type="submit" class="btn btn-primary">Update Customer</button>
 </form>
 </div>
 

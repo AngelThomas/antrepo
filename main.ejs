@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Item list</title>
+  <title>Little Shop of horrors</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
@@ -11,7 +11,7 @@
 
 </head>
 <body>
-  <%- include ('navBar') -%>
+    <%- include ('navBar') -%>
 
 <div class="container">
   <h4>Item List</h4>
@@ -34,14 +34,11 @@
       <% items.forEach(function(item) { %>
 	  <form method="post" action="/add2cart" onsubmit="return checkInp('quantity_<%=item.itemNr%>')">
       <tr>
-        <input type="hidden" name="prodNr" value="<%=item.itemNr%>" />
-        <input type="hidden" name="prodName" value="<%=item.itemName%>" />
-        <input type="hidden" name="prodPrice" value="<%=item.itemPrice%>" />
         <!-- <td><input type="text" class="form-control" name="prodNr" value="<%=item.itemNr%>" disabled/></td> -->
         <td><%=item.itemNr%></td> 
         <td><%=item.itemName%></td>
         <td style="text-align:right"><%=item.itemPrice%></td>
-        <td><input type="text" class="form-control" name="quantity" id="quantity_<%=item.itemNr%>" value="0"/></td>
+        <td><input type="text" class="form-control" name="quantity" id="quantity_<%=item.itemNr%>" value="1"/></td>
         <td><input type="submit" class="btn btn-outline-primary btn-sm" value="Add to cart" name="add2cart_<%=item.itemNr%>"/></td>
       </tr>
 	  </form>

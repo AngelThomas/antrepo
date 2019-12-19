@@ -5,6 +5,7 @@ const sqlite3 = require('sqlite3').verbose();
 const portNum = 8089;
 const https = require('https');
 const fs = require('fs');
+const url = require('url');
 var dbSetup = require('./dbSetup.js');
 var path = require('path');
 var app = express();
@@ -37,6 +38,20 @@ function queryTable(pTable, pSessionId) {
 			reject ('Error while inserting data into table: ' + err);
 		} else {
 			resolve(rows);
+		}
+	  });
+	});
+  }
+
+  function queryTableByColumns(pTable, pColumns, pOptions) {
+	return new Promise(resolve => {
+		pStatement = "SELECT * FROM " + pTable + " WHERE " + pColumns;
+		console.log(pStatement);
+		db.get(pStatement, pOptions, (err, row) => {
+		if (err) {
+			reject ('Error while inserting data into table: ' + err);
+		} else {
+			resolve(row);
 		}
 	  });
 	});
@@ -77,17 +92,32 @@ function queryTable(pTable, pSessionId) {
 		pStatement = "INSERT INTO " + pTable + " " + pColumns;
 		console.log(pStatement);
 		pDB.run(pStatement, pOptions, function (err) {
-		if (err) {
-			console.log(err);
-			reject ('Error while inserting data into table: ' + err);
-		} else {
-			var myLastID = this.lastID;
-			console.log("Last ID: " + myLastID);
-			resolve(myLastID);
-		}
-	  });
+			if (err) {
+				console.log(err);
+				reject ('Error while inserting data into table: ' + err);
+			} else {
+				var myLastID = this.lastID;
+				console.log("Last ID: " + myLastID);
+				resolve(myLastID);
+			}
+	  	});
 	});
   }
+
+function updateTableById(pTable, pColumns, pOptions, pId) {
+	return new Promise(resolve => {
+		pStatement = "UPDATE " + pTable + " SET " + pColumns + " WHERE customer_id = " + pId;
+		console.log("updateTableById SQL: " + pStatement);
+		db.run(pStatement, pOptions, function (err) {
+			if (err) {
+				console.log(err);
+				reject ('Error while inserting data into table: ' + err);
+			} else {
+				resolve('Success');
+			}
+	  	});
+	});
+}
 
 dbSetup.createDbTables(db);
 
@@ -113,7 +143,8 @@ app.get('/', (req, res) => {
 				itemRow = {"itemNr": item.item_id, "itemName": item.item_name, "itemPrice": item.item_price};
 				itemList.push(itemRow);
 			});
-			res.render('main', { items:itemList});
+			console.log("loggedIn: " + req.session.loggedin);
+			res.render('main', { items:itemList, isLoggedIn:req.session.loggedin});
 		}
 	});
 });
@@ -132,7 +163,7 @@ app.get('/showCart', (req, res) => {
 				cartRow = {"itemId": item.item_id, "itemName": item.item_name, "itemPrice": item.item_price, "itemQuantity":item.item_quantity};
 				myCart.push(cartRow);
 			});
-			res.render('showCart', { itemCount: myCart.length, cartItems: myCart });
+			res.render('showCart', { itemCount: myCart.length, cartItems: myCart, isLoggedIn:req.session.loggedin });
 		}
 	})
 });
@@ -149,10 +180,10 @@ app.post('/removeFromCart', async (req, res) => {
 	});
 
 	cart = tmpCart; 
-	res.render('showCart', { itemCount: cart.length, cartItems: cart });
+	res.render('showCart', { itemCount: cart.length, cartItems: cart, isLoggedIn:req.session.loggedin });
 });
 
-app.post('/add2cart', (req, res) => {
+app.post('/add2cart', async (req, res) => {
 	console.log('In add2cart');
 	console.log(req.body);
 	var bodyDoc = req.body;
@@ -169,11 +200,13 @@ app.post('/add2cart', (req, res) => {
 			console.log("Cart Item Id from submit: " + cartItemId);
 		}
 	});
+	var pOptions = [cartItemId];
+	var itemData = await queryTableByColumns("items", "item_id = ?", pOptions)
 
 	var mySessionId = req.sessionID;
 	var cartItemQty = req.body.quantity;
-	var cartItemName = req.body.prodName;
-	var cartItemPrice = req.body.prodPrice;
+	var cartItemName = itemData.item_name;
+	var cartItemPrice = itemData.item_price;
 
 	var insertStmt = "INSERT INTO shopping_cart(session_id, item_id, item_name, item_quantity, item_price) VALUES (?, ?, ?, ?, ?)";
 	db.run(insertStmt, [mySessionId, cartItemId, cartItemName, cartItemQty, cartItemPrice], function(err) {
@@ -197,13 +230,17 @@ app.post('/placeOrder', async (req, res) => {
 	var cZip = req.body.adrZip;
 	var cCity = req.body.adrCity;
 	var insOptions = [cFName, cLName, cStreet, cZip, cCity]
-	var customerId = await insertTable(db, "customers", "(first_name, last_name, street, zip_code, city) VALUES (?, ?, ?, ?, ?)", insOptions);
+	// var customerId = await insertTable(db, "customers", "(first_name, last_name, street, zip_code, city) VALUES (?, ?, ?, ?, ?)", insOptions);
+	// var customerData = await queryTable("customers", req.sessionID);
+	var pOptions = [req.sessionID, cFName, cLName];
+	var customerData = await queryTableByColumns("customers", "session_id = ? AND first_name = ? AND last_name = ?", pOptions);
+	var customerId = customerData.customer_id;
 	console.log("Last ID (Customer): " + customerId);
 	if (isNaN(customerId)) {
 		res.redirect(url.format({
 			pathname:"/error",
 			query: {
-			   "errorMessage": orderId
+			   "errorMessage": customerId
 			 }
 		  }));
 	}
@@ -259,9 +296,83 @@ app.get('/orderCart', async (req, res) => {
 		});
 		
 		// res.render('orderCart', {cartItems: cart});
-		res.render('orderCart', {cartItems: myCart, userData: userRow});
+		res.render('orderCart', {cartItems: myCart, userData: userRow, isLoggedIn:req.session.loggedin});
 	} else {
 		res.render('login');
+	}
+});
+
+app.post("/createNewCustomer", async function(req, res) {
+	var newAccountName = req.body.accountName;
+	var newFirstName = req.body.firstName;
+	var newLastName = req.body.lastName;
+	var newStreet = req.body.adrStreet;
+	var newZipCode = req.body.adrZip;
+	var newCity = req.body.adrCity;
+	var newPassword = req.body.adrPassword;
+	var currentSession = req.sessionID;
+	pOptions = [newAccountName, newFirstName, newLastName, newStreet, newZipCode, newCity, newPassword];
+	var result = await insertTable(db, "customers", "(customer_name, first_name, last_name, street, zip_code, city, currentSession) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", pOptions);
+	if (!isNaN(result)) {
+		req.session.loggedin = true;
+		req.session.username = newAccountName;
+		req.session.firstName = newFirstName;
+		req.session.lastName = newLastName;
+		req.session.street = newStreet;
+		req.session.zipCode = newZipCode;
+		req.session.city = newCity;		
+		res.redirect('/');
+	} else {
+		res.render('error', {errorMessage: result});
+	}
+});
+
+app.post('/auth', async function(req, res){
+	var userName = req.body.username;
+    var passwd = req.body.password;
+	var loggedIn;
+	console.log("Origin: " + req.get('origin'));
+	console.log(req.originalUrl);
+	console.log('Login attempt with user ' + userName + ', password: ' + passwd);
+
+	var row = await queryTableByColumns("customers", "customer_name = ? AND password = ?", [userName, passwd]);
+	if (row != undefined) {
+		console.log(row);
+		console.log('Found ID ' + row.customer_id);
+		loggedIn = true;
+		req.session.loggedin = true;
+		req.session.username = row.customer_name;
+		req.session.firstName = row.first_name;
+		req.session.lastName = row.last_name;
+		req.session.street = row.street;
+		req.session.zipCode = row.zip_code;
+		req.session.city = row.city;
+		pOptions = [req.sessionID];
+		var result = await updateTableById("customers", "session_id = ?", pOptions, row.customer_id);
+		console.log("Result from update customers: " + result);
+		console.log("req before redirect, loggedin: " + req.session.loggedin + ", username: " + req.session.username);
+		var orderCart = await queryTable("shopping_cart", req.sessionID);
+		if (orderCart.length > 0) {
+			res.redirect('/orderCart');
+		} else {
+			res.redirect('/');
+		}
+	} else {
+		loggedIn = false;
+		res.redirect('/error');                
+	}
+});
+
+app.get('/register', function(req, res) {
+	res.render('createCustomer', {isLoggedIn:req.session.loggedin});
+});
+
+app.get('/login', function(req, res) {
+	if (req.session.loggedin === true) {
+		var customerData = { cUser: req.session.username, cFirst: req.session.firstName, cLast: req.session.lastName, cStreet: req.session.street, cZip: req.session.zipCode, cCity: req.session.city};
+		res.render('editCustomer', {data: customerData});
+	} else {
+		res.render('login', {isLoggedIn:req.session.loggedin});
 	}
 });
 
@@ -270,44 +381,6 @@ app.listen(portNum, () => {
 	console.log('App running on port ' + portNum);
 });
 */
-
-app.post('/auth', function(req, res){
-    var userName = req.body.username;
-    var passwd = req.body.password;
-	var loggedIn;
-	console.log("Origin: " + req.get('origin'));
-    console.log('Login attempt with user ' + userName + ', password: ' + passwd);
-    db.get("SELECT * FROM customers WHERE customer_name = ? AND password = ?", [userName, passwd], function(err, row) {
-        if (err) {
-            console.log(err);
-            loggedIn = false;
-            res.redirect('/error');
-        } else {
-            console.log(row);
-            if (row != undefined) {
-                console.log('Found ID ' + row.account_id);
-                loggedIn = true;
-                req.session.loggedin = true;
-				req.session.username = row.customer_name;
-				req.session.firstName = row.first_name;
-				req.session.lastName = row.last_name;
-				req.session.street = row.street;
-				req.session.zipCode = row.zip_code;
-				req.session.city = row.city;
-				console.log("req before redirect, loggedin: " + req.session.loggedin + ", username: " + req.session.username);
-                res.redirect('/orderCart');
-            } else {
-                loggedIn = false;
-                res.redirect('/error');                
-            }
-        }
-        res.end();
-    });
-});
-
-app.get('/register', function(req, res) {
-	res.render('createCustomer');
-});
 
 server.listen(portNum, () => {
 	console.log('App running on port ' + portNum);
