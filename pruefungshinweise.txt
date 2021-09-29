@@ -1,0 +1,13 @@
+frage zu fachlicher kontext: wenn in der Antwort "Trennen" vorkommt, falsch. Fachlicher Kontext trennt nicht, er zeigt etwas.
+
+Bei Fragen nach Qualitätsanforderungen auf Zahlen achten, das sollten die gefragten Anforderungen sein.
+
+Schwer verständliche/unwahrscheinliche/unrealistische Antwortoptionen ausschließen?
+
+Top Down -> grob nach fein (vom System zu den Bausteinen) -> Abstrakt nach konkret
+
+Bottom Up -> fein nach Grob (einzelne Bausteine nach System) -> konkrekt nach Abstrakt
+
+Auf "Universalquantoren" (alle, immer...) achten, das deutet auf eine falsche Antwortoption hin.
+
+Bausteinsicht: bei Fragen, was ein Baustein sein kann: nicht Codeblock, variable oder ähnlich kleine Komponenten!
